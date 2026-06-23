@@ -19,16 +19,19 @@
     }
 
     .display {
-      width: 1080px;
-      height: 1920px;
-      position: relative;
-      overflow: hidden;
-      background:
+    width: 1080px;
+    min-height: 1920px;
+
+    display: flex;
+    flex-direction: column;
+
+    background:
         linear-gradient(rgba(2, 25, 45, 0.35), rgba(2, 25, 45, 0.75)),
         url("https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1080&q=90");
-      background-size: cover;
-      background-position: center;
-      padding: 55px 38px 38px;
+
+    background-size: cover;
+    background-position: center;
+    padding: 55px 38px 38px;
     }
 
     .title {
@@ -286,12 +289,12 @@
     }
 
     .footer {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 38px;
-      text-align: center;
-    }
+    margin-top: auto;
+    padding-top: 20px;
+
+    display: flex;
+    justify-content: center;
+    }   
 
     .footer-pill {
       display: inline-flex;

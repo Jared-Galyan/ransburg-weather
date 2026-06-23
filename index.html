@@ -15,7 +15,7 @@
   <main class="display">
 
     <div class="title">WEATHER</div>
-    <div class="location">📍 PINE RIDGE CAMP</div>
+    <div class="location">📍 Ransburg Scout Reservation</div>
 
     <div class="meta">
       <div>📅 MAY 17, 2025</div>
@@ -26,7 +26,7 @@
     <section class="panel alerts">
       <div class="alerts-header">
         <div class="alert-icon">⚠️</div>
-        <div class="alerts-title">2 ACTIVE WEATHER ALERTS</div>
+        <div id="weatherAlerts" class="alerts-title">2 ACTIVE WEATHER ALERTS</div>
       </div>
 
       <div class="alert-row">
@@ -54,20 +54,20 @@
       <div>
         <div class="section-title">CURRENT WEATHER</div>
         <div class="current-main">
-          <div class="weather-icon">🌤️</div>
+          <div id="currentIcon" class="weather-icon">🌤️</div>
           <div>
-            <div class="temp">72°<span style="font-size:55px;">F</span></div>
-            <div class="condition">Partly Cloudy</div>
+            <div id="currentTemp" class="temp">72°<span style="font-size:55px;">F</span></div>
+            <div id="currentCondition" class="condition">Partly Cloudy</div>
           </div>
         </div>
       </div>
 
       <div class="details">
-        <div class="detail-row"><span>🌡️</span><span>Feels Like</span><strong>72°</strong></div>
-        <div class="detail-row"><span>💨</span><span>Wind</span><strong>SW 8 mph</strong></div>
-        <div class="detail-row"><span>💧</span><span>Humidity</span><strong>56%</strong></div>
-        <div class="detail-row"><span>🕘</span><span>Pressure</span><strong>29.92 in</strong></div>
-        <div class="detail-row"><span>👁️</span><span>Visibility</span><strong>10 mi</strong></div>
+        <div id="currentHeat" class="detail-row"><span>🌡️</span><span>Feels Like</span><strong>72°</strong></div>
+        <div id="currentWind" class="detail-row"><span>💨</span><span>Wind</span><strong>SW 8 mph</strong></div>
+        <div id="currentHumidity" class="detail-row"><span>💧</span><span>Humidity</span><strong>56%</strong></div>
+        <div id="currentPressure" class="detail-row"><span>🕘</span><span>Pressure</span><strong>29.92 in</strong></div>
+        <div id="currentUpdated" class="detail-row"><span>👁️</span><span>Last Updated</span><strong>insert time here</strong></div>
       </div>
     </section>
 
@@ -75,10 +75,10 @@
       <div class="section-title">TODAY</div>
       <div class="forecast-grid">
         <div class="daily-summary">
-          <div class="weather-icon">🌤️</div>
-          <div class="hi-low">76°<br><span class="low">58°</span></div>
-          <div class="small-condition">Partly Sunny</div>
-          <div class="rain">💧 20% Chance of Rain</div>
+          <div id="todayIcon" class="weather-icon">🌤️</div>
+          <div id="todayHigh" class="hi-low">76°<br><span id="todayLow" class="low">58°</span></div>
+          <div id="todayCondition" class="small-condition">Partly Sunny</div>
+          <div id="todayChance" class="rain">💧 20% Chance of Rain</div>
         </div>
 
         <div class="hour"><div class="hour-time">12 PM</div><div class="hour-icon">🌤️</div><div class="hour-temp">74°</div><div class="hour-rain">💧 10%</div></div>
