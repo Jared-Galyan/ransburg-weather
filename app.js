@@ -1,7 +1,7 @@
 // Standalone weather display — fetches the National Weather Service API directly
 // from the browser (NWS and zippopotam.us both allow CORS). No API key required.
 
-const DEFAULT_ZIP = "10001";
+const DEFAULT_ZIP = "47401";
 const REFRESH_MS = 5 * 60 * 1000;
 const WINDOW_ROTATE_MS = 6 * 1000;
 
