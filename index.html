@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-slate-50">
+<html lang="en" class="bg-[#0a1a33]">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f8fafc" />
+    <meta name="theme-color" content="#0a1a33" />
     <title>Weather Display</title>
     <meta
       name="description"
@@ -28,32 +28,40 @@
       html { -webkit-font-smoothing: antialiased; }
       .tabular { font-variant-numeric: tabular-nums; }
       body {
-        background-image: url("./public/nature-bg.png");
+        background-image: linear-gradient(
+            to bottom,
+            rgba(6, 17, 38, 0.55),
+            rgba(6, 17, 38, 0.8)
+          ),
+          url("./public/nature-bg.png");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
       }
     </style>
   </head>
-  <body class="h-screen overflow-hidden text-slate-800 font-sans">
+  <body class="h-screen overflow-hidden text-white font-sans">
     <main class="mx-auto flex h-screen max-w-[820px] flex-col gap-3 px-6 py-4">
       <!-- Header -->
-      <header class="flex shrink-0 items-center justify-between gap-4 rounded-2xl border border-white/40 bg-white/80 px-5 py-3 shadow-sm backdrop-blur">
+      <header class="flex shrink-0 items-center justify-between gap-4 rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 shadow-lg backdrop-blur">
         <div class="min-w-0">
-          <div class="flex items-center gap-2 text-brand">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
-            <h1 id="location" class="truncate text-3xl font-bold leading-tight">
+          <p class="text-xs font-bold uppercase tracking-[0.35em] text-sky-300/80">
+            Weather
+          </p>
+          <div class="mt-0.5 flex items-center gap-2 text-sky-300">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+            <h1 id="location" class="truncate text-3xl font-bold leading-tight text-white">
               Loading location…
             </h1>
           </div>
-          <p id="date" class="mt-1 text-lg text-slate-500 tabular"></p>
+          <p id="date" class="mt-1 text-base text-sky-200/70 tabular"></p>
         </div>
         <div class="flex items-center gap-3">
-          <p id="clock" class="text-4xl font-bold tabular">--:--</p>
+          <p id="clock" class="text-4xl font-bold tabular text-white">--:--</p>
           <button
             id="settings-btn"
             aria-label="Change location"
-            class="inline-flex size-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100"
+            class="inline-flex size-11 items-center justify-center rounded-lg border border-sky-400/30 bg-blue-900/60 text-sky-200 transition hover:bg-blue-800/70"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
@@ -63,19 +71,19 @@
       <!-- Location editor -->
       <div
         id="editor"
-        class="hidden items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4"
+        class="hidden items-center gap-3 rounded-2xl border border-sky-400/25 bg-blue-950/70 px-5 py-4 backdrop-blur"
       >
-        <label for="zip" class="text-lg font-medium">ZIP code</label>
+        <label for="zip" class="text-lg font-medium text-white">ZIP code</label>
         <input
           id="zip"
           inputmode="numeric"
           maxlength="5"
           placeholder="10001"
-          class="w-32 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-lg tabular outline-none focus:ring-2 focus:ring-brand"
+          class="w-32 rounded-lg border border-sky-400/30 bg-blue-900/50 px-3 py-2 text-lg text-white tabular outline-none placeholder:text-sky-200/40 focus:ring-2 focus:ring-sky-400"
         />
         <button
           id="save-btn"
-          class="rounded-lg bg-brand px-4 py-2 font-medium text-white transition hover:bg-blue-700"
+          class="rounded-lg bg-sky-500 px-4 py-2 font-medium text-white transition hover:bg-sky-400"
         >
           Save
         </button>
@@ -83,12 +91,12 @@
 
       <!-- Content -->
       <div id="content" class="flex min-h-0 flex-1 flex-col gap-3">
-        <p class="text-center text-lg text-slate-500">Loading weather…</p>
+        <p class="text-center text-lg text-sky-200/70">Loading weather…</p>
       </div>
 
       <!-- Footer -->
       <footer
-        class="flex shrink-0 items-center justify-center gap-2 rounded-xl border border-white/40 bg-white/80 px-4 py-1.5 text-sm text-slate-600 shadow-sm backdrop-blur"
+        class="flex shrink-0 items-center justify-center gap-2 rounded-full border border-sky-400/25 bg-blue-950/65 px-5 py-1.5 text-sm text-sky-200/80 shadow-lg backdrop-blur"
       >
         <svg id="refresh-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
         <span id="updated">Data from the National Weather Service</span>

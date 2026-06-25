@@ -207,30 +207,32 @@ async function getWeather(zip) {
 
 /* ---------- rendering ---------- */
 
-function severityClasses(severity) {
+function severityBadge(severity) {
   switch (severity) {
     case "Extreme":
     case "Severe":
-      return "border-red-300 bg-red-50 text-red-800";
+      return { text: "SEVERE", color: "bg-red-500" };
     case "Moderate":
-      return "border-amber-300 bg-amber-50 text-amber-800";
+      return { text: "MODERATE", color: "bg-amber-500" };
+    case "Minor":
+      return { text: "MINOR", color: "bg-sky-500" };
     default:
-      return "border-blue-300 bg-blue-50 text-blue-800";
+      return { text: (severity || "ALERT").toUpperCase(), color: "bg-sky-500" };
   }
 }
 
 function renderAlerts(alerts) {
   if (!alerts.length) {
     return `
-      <section class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-800">
-        <div class="flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-          <p class="text-lg font-semibold">No active weather alerts</p>
-        </div>
+      <section class="flex h-[15vh] shrink-0 items-center gap-3 rounded-2xl border border-emerald-400/30 bg-emerald-900/40 px-6 text-emerald-100 shadow-lg backdrop-blur">
+        <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <p class="text-xl font-bold">No active weather alerts</p>
       </section>`;
   }
 
-  const cards = alerts
+  const rows = alerts
     .map((a) => {
       const ends = a.ends
         ? new Date(a.ends).toLocaleString(undefined, {
@@ -239,36 +241,56 @@ function renderAlerts(alerts) {
             minute: "2-digit",
           })
         : null;
+      const badge = severityBadge(a.severity);
       return `
-        <div class="rounded-2xl border-2 px-5 py-4 ${severityClasses(a.severity)}">
-          <div class="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-            <p class="text-xl font-bold">${esc(a.event)}</p>
+        <div class="flex items-center gap-3 border-t border-white/15 py-2 first:border-t-0">
+          <span class="flex size-9 shrink-0 items-center justify-center rounded-full ${badge.color} text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-lg font-bold uppercase leading-tight text-white">${esc(a.event)}</p>
+            ${ends ? `<p class="text-sm text-white/70">Until ${esc(ends)}</p>` : ""}
           </div>
-          ${a.headline ? `<p class="mt-1 text-base leading-relaxed">${esc(a.headline)}</p>` : ""}
-          ${ends ? `<p class="mt-1 text-sm font-medium opacity-80">Until ${esc(ends)}</p>` : ""}
+          <span class="shrink-0 rounded-md ${badge.color} px-3 py-1 text-sm font-bold tracking-wide text-white">${badge.text}</span>
         </div>`;
     })
     .join("");
 
-  return `<section class="flex flex-col gap-3">${cards}</section>`;
+  const count = alerts.length;
+  return `
+    <section class="flex h-[15vh] shrink-0 flex-col overflow-hidden rounded-2xl border border-red-400/40 bg-gradient-to-b from-red-700/85 to-red-900/85 px-5 py-2 text-white shadow-lg backdrop-blur">
+      <div class="flex shrink-0 items-center gap-2 pb-1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <p class="text-lg font-extrabold uppercase tracking-wide">${count} Active Weather Alert${count > 1 ? "s" : ""}</p>
+      </div>
+      <div class="flex-1 overflow-y-auto">${rows}</div>
+    </section>`;
 }
 
-function metric(label, value) {
+const METRIC_ICONS = {
+  heat: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>',
+  wind: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/><path d="M9.8 4.4A2 2 0 1 1 11 8H2"/></svg>',
+  humidity: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7Z"/></svg>',
+  pressure: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  visibility: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
+};
+
+function metricRow(icon, label, value) {
   if (value === null || value === undefined || value === "") return "";
   return `
-    <div class="rounded-xl bg-slate-50 px-4 py-3">
-      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">${esc(label)}</p>
-      <p class="mt-1 text-xl font-bold tabular">${esc(value)}</p>
+    <div class="flex items-center gap-2 border-t border-white/10 py-1.5 first:border-t-0">
+      <span class="text-sky-300">${icon}</span>
+      <span class="text-sm text-sky-100/80">${esc(label)}</span>
+      <span class="ml-auto text-base font-bold tabular text-white">${esc(value)}</span>
     </div>`;
 }
 
 function renderCurrent(current) {
   if (!current) {
     return `
-      <section class="rounded-2xl border border-slate-200 bg-white px-6 py-6">
-        <p class="text-sm font-semibold uppercase tracking-wide text-slate-400">Current Conditions</p>
-        <p class="mt-2 text-lg text-slate-400">Observation unavailable</p>
+      <section class="flex h-[20vh] shrink-0 flex-col justify-center rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
+        <p class="text-sm font-bold uppercase tracking-widest text-sky-300/80">Current Weather</p>
+        <p class="mt-2 text-lg text-sky-200/70">Observation unavailable</p>
       </section>`;
   }
 
@@ -278,37 +300,39 @@ function renderCurrent(current) {
       : null;
 
   const metrics = [
-    metric("Heat Index", current.heatIndex != null ? current.heatIndex + "°" : null),
-    metric("Humidity", current.humidity != null ? current.humidity + "%" : null),
-    metric("Wind", wind),
-    metric("Pressure", current.pressure != null ? current.pressure + " inHg" : null),
-    metric("Visibility", current.visibility != null ? current.visibility + " mi" : null),
+    metricRow(METRIC_ICONS.heat, "Heat Index", current.heatIndex != null ? current.heatIndex + "°" : null),
+    metricRow(METRIC_ICONS.wind, "Wind", wind),
+    metricRow(METRIC_ICONS.humidity, "Humidity", current.humidity != null ? current.humidity + "%" : null),
+    metricRow(METRIC_ICONS.pressure, "Pressure", current.pressure != null ? current.pressure + " in" : null),
+    metricRow(METRIC_ICONS.visibility, "Visibility", current.visibility != null ? current.visibility + " mi" : null),
   ].join("");
 
   return `
-    <section class="rounded-2xl border border-slate-200 bg-white px-6 py-6">
-      <p class="text-sm font-semibold uppercase tracking-wide text-slate-400">Current Conditions</p>
-      <div class="mt-2 flex items-end gap-4">
-        <p class="text-7xl font-bold leading-none tabular">${current.temperature != null ? current.temperature + "°" : "--"}</p>
-        <p class="pb-2 text-xl text-slate-600">${esc(current.textDescription || "")}</p>
-      </div>
-      <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        ${metrics}
+    <section class="flex h-[20vh] shrink-0 flex-col rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
+      <p class="text-sm font-bold uppercase tracking-widest text-sky-300/80">Current Weather</p>
+      <div class="mt-1 flex flex-1 items-center gap-6">
+        <div class="flex shrink-0 flex-col justify-center">
+          <p class="text-6xl font-bold leading-none tabular">${current.temperature != null ? current.temperature : "--"}<span class="align-top text-2xl text-sky-300">°F</span></p>
+          <p class="mt-1 text-lg text-sky-100/80">${esc(current.textDescription || "")}</p>
+        </div>
+        <div class="flex flex-1 flex-col justify-center self-stretch">
+          ${metrics}
+        </div>
       </div>
     </section>`;
 }
 
 function renderIntervalRow(readings) {
   if (!readings || !readings.length) {
-    return `<p class="py-4 text-center text-slate-400">No hourly data</p>`;
+    return `<p class="py-4 text-center text-sky-200/60">No hourly data</p>`;
   }
   return readings
     .map((r) => {
       const hour = r.time.toLocaleTimeString(undefined, { hour: "numeric" });
       return `
-        <div class="flex flex-1 flex-col items-center gap-1 rounded-xl bg-slate-50 py-3">
-          <span class="text-sm font-medium text-slate-500 tabular">${esc(hour)}</span>
-          <span class="text-2xl font-bold tabular">${r.temp != null ? r.temp + "°" : "--"}</span>
+        <div class="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl bg-blue-900/50">
+          <span class="text-sm font-medium text-sky-200/70 tabular">${esc(hour)}</span>
+          <span class="text-2xl font-bold tabular text-white">${r.temp != null ? r.temp + "°" : "--"}</span>
         </div>`;
     })
     .join("");
@@ -319,7 +343,7 @@ function renderDots(count, idx) {
   return Array.from({ length: count })
     .map(
       (_, i) =>
-        `<span class="size-2 rounded-full ${i === idx ? "bg-brand" : "bg-slate-300"}"></span>`
+        `<span class="size-2 rounded-full ${i === idx ? "bg-sky-300" : "bg-white/25"}"></span>`
     )
     .join("");
 }
@@ -327,24 +351,28 @@ function renderDots(count, idx) {
 function renderForecastCard(key, day) {
   if (!day) {
     return `
-      <div class="flex-1 rounded-2xl border border-slate-200 bg-white px-6 py-5">
-        <p class="text-sm font-semibold uppercase tracking-wide text-slate-400">${esc(key)}</p>
-        <p class="mt-2 text-slate-400">Forecast unavailable</p>
+      <div class="flex h-[20vh] shrink-0 flex-col justify-center rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
+        <p class="text-sm font-bold uppercase tracking-widest text-sky-300/80">${esc(key)}</p>
+        <p class="mt-2 text-sky-200/70">Forecast unavailable</p>
       </div>`;
   }
   return `
-    <div class="flex-1 rounded-2xl border border-slate-200 bg-white px-6 py-5">
+    <div class="flex h-[20vh] shrink-0 flex-col rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
       <div class="flex items-baseline justify-between gap-2">
-        <p class="text-sm font-semibold uppercase tracking-wide text-slate-400">${esc(day.label)}</p>
-        <p class="text-sm text-slate-400">${esc(day.dateLabel)}</p>
+        <p class="text-sm font-bold uppercase tracking-widest text-sky-300/80">${esc(day.label)}</p>
+        <p class="text-sm text-sky-200/60">${esc(day.dateLabel)}</p>
       </div>
-      <div class="mt-2 flex items-baseline gap-3">
-        <span class="text-5xl font-bold tabular">${day.high != null ? day.high + "°" : "--"}</span>
-        <span class="text-2xl font-medium text-slate-400 tabular">${day.low != null ? day.low + "°" : "--"}</span>
+      <div class="mt-1 flex flex-1 items-center gap-6">
+        <div class="flex w-44 shrink-0 flex-col justify-center">
+          <div class="flex items-baseline gap-2">
+            <span class="text-4xl font-bold tabular text-white">${day.high != null ? day.high + "°" : "--"}</span>
+            <span class="text-2xl font-semibold text-sky-300 tabular">${day.low != null ? day.low + "°" : "--"}</span>
+          </div>
+          <p class="mt-1 text-sm leading-snug text-sky-100/80">${esc(day.condition || "")}</p>
+        </div>
+        <div id="${key}-intervals" class="flex flex-1 items-stretch gap-2 self-stretch py-1"></div>
       </div>
-      <p class="mt-2 text-lg leading-relaxed text-slate-700">${esc(day.condition || "")}</p>
-      <div id="${key}-intervals" class="mt-4 flex gap-2"></div>
-      <div id="${key}-dots" class="mt-3 flex items-center justify-center gap-1.5"></div>
+      <div id="${key}-dots" class="flex items-center justify-center gap-1.5"></div>
     </div>`;
 }
 
@@ -363,10 +391,10 @@ function updateIntervals() {
 
 function renderError(message) {
   return `
-    <div class="rounded-2xl border-2 border-red-300 bg-red-50 px-6 py-5 text-red-800">
+    <div class="rounded-2xl border border-red-400/40 bg-red-900/60 px-6 py-5 text-white shadow-lg backdrop-blur">
       <p class="text-xl font-semibold">Unable to load weather</p>
-      <p class="mt-1 text-lg">${esc(message)}</p>
-      <button id="retry-btn" class="mt-3 rounded-lg border border-red-300 bg-white px-4 py-2 font-medium text-red-700 hover:bg-red-100">Retry</button>
+      <p class="mt-1 text-lg text-red-100/90">${esc(message)}</p>
+      <button id="retry-btn" class="mt-3 rounded-lg border border-white/30 bg-white/10 px-4 py-2 font-medium text-white hover:bg-white/20">Retry</button>
     </div>`;
 }
 
@@ -380,10 +408,8 @@ function render(data) {
   el.content.innerHTML = `
     ${renderAlerts(data.alerts)}
     ${renderCurrent(data.current)}
-    <div class="flex flex-col gap-6 sm:flex-row">
-      ${renderForecastCard("today", data.forecast.today)}
-      ${renderForecastCard("tomorrow", data.forecast.tomorrow)}
-    </div>`;
+    ${renderForecastCard("today", data.forecast.today)}
+    ${renderForecastCard("tomorrow", data.forecast.tomorrow)}`;
 
   updateIntervals();
 
