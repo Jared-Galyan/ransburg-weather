@@ -315,14 +315,15 @@ body {
 }
 .metric {
   display: flex;
+  justify-content: center;
   align-items: center;
   padding: 8px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 .metric:first-child { border-top: 0; }
 .metric-icon { color: #7dd3fc; display: inline-flex; margin-right: 12px; }
-.metric-label { font-size: 16px; color: rgba(224, 242, 254, 0.8); }
-.metric-value { margin-left: auto; font-size: 20px; font-weight: 700; }
+.metric-label { font-size: 24px; color: rgba(224, 242, 254, 0.8); }
+.metric-value { margin-left: auto; font-size: 24px; font-weight: 700; }
 
 /* ---------- forecast ---------- */
 
