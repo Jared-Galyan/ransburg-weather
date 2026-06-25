@@ -230,12 +230,13 @@ const ICON = {
 function weatherGlyph(text, isDay, size) {
   const t = (text || "").toLowerCase();
   const wrap = (inner) =>
-    `<span class="relative inline-flex shrink-0" style="width:${size}px;height:${size}px">${inner}</span>`;
-  const single = (svg) => wrap(`<span class="absolute inset-0">${svg}</span>`);
+    `<span class="glyph" style="position:relative;display:inline-block;flex:none;width:${size}px;height:${size}px">${inner}</span>`;
+  const single = (svg) =>
+    wrap(`<span style="position:absolute;top:0;left:0;width:100%;height:100%">${svg}</span>`);
   const composite = (bg) =>
     wrap(
-      `<span class="absolute left-0 top-0" style="width:${Math.round(size * 0.6)}px;height:${Math.round(size * 0.6)}px">${bg}</span>` +
-        `<span class="absolute bottom-0 right-0" style="width:${Math.round(size * 0.78)}px;height:${Math.round(size * 0.78)}px">${ICON.cloud}</span>`
+      `<span style="position:absolute;left:0;top:0;width:${Math.round(size * 0.6)}px;height:${Math.round(size * 0.6)}px">${bg}</span>` +
+        `<span style="position:absolute;right:0;bottom:0;width:${Math.round(size * 0.78)}px;height:${Math.round(size * 0.78)}px">${ICON.cloud}</span>`
     );
 
   if (t.includes("thunder") || t.includes("tstorm")) return single(ICON.storm);
@@ -259,24 +260,24 @@ function severityBadge(severity) {
   switch (severity) {
     case "Extreme":
     case "Severe":
-      return { text: "SEVERE", color: "bg-red-500" };
+      return { text: "SEVERE", cls: "sev-severe" };
     case "Moderate":
-      return { text: "MODERATE", color: "bg-amber-500" };
+      return { text: "MODERATE", cls: "sev-moderate" };
     case "Minor":
-      return { text: "MINOR", color: "bg-sky-500" };
+      return { text: "MINOR", cls: "sev-minor" };
     default:
-      return { text: (severity || "ALERT").toUpperCase(), color: "bg-sky-500" };
+      return { text: (severity || "ALERT").toUpperCase(), cls: "sev-minor" };
   }
 }
 
 function renderAlerts(alerts) {
   if (!alerts.length) {
     return `
-      <section class="flex min-h-0 flex-[2] shrink-0 items-center gap-3 rounded-2xl border border-emerald-400/30 bg-emerald-900/40 px-6 text-emerald-100 shadow-lg backdrop-blur">
-        <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+      <section class="panel alerts-ok grow-2">
+        <span class="alert-icon ok">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
         </span>
-        <p class="text-xl font-bold">No active weather alerts</p>
+        <p class="alerts-ok-text">No active weather alerts</p>
       </section>`;
   }
 
@@ -291,28 +292,28 @@ function renderAlerts(alerts) {
         : null;
       const badge = severityBadge(a.severity);
       return `
-        <div class="flex items-center gap-3 border-t border-white/15 py-2 first:border-t-0">
-          <span class="flex size-9 shrink-0 items-center justify-center rounded-full ${badge.color} text-white">
+        <div class="alert-row">
+          <span class="alert-badge-icon ${badge.cls}">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
           </span>
-          <div class="min-w-0 flex-1">
-            <p class="truncate text-lg font-bold uppercase leading-tight text-white">${esc(a.event)}</p>
-            ${ends ? `<p class="text-sm text-white/70">Until ${esc(ends)}</p>` : ""}
+          <div class="alert-row-main">
+            <p class="alert-event">${esc(a.event)}</p>
+            ${ends ? `<p class="alert-until">Until ${esc(ends)}</p>` : ""}
           </div>
-          <span class="shrink-0 rounded-md ${badge.color} px-3 py-1 text-sm font-bold tracking-wide text-white">${badge.text}</span>
+          <span class="alert-badge ${badge.cls}">${badge.text}</span>
         </div>`;
     })
     .join("");
 
   const count = alerts.length;
   return `
-    <section class="flex min-h-0 flex-[3] shrink-0 flex-col overflow-hidden rounded-2xl border border-red-400/40 bg-gradient-to-b from-red-700/85 to-red-900/85 text-white shadow-lg backdrop-blur">
-      <div class="flex shrink-0 items-center gap-3 border-b border-white/15 px-5 py-2">
+    <section class="panel alerts grow-3">
+      <div class="alerts-head">
         <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-        <p class="text-xl font-extrabold uppercase tracking-wide">${count} Active Weather Alert${count > 1 ? "s" : ""}</p>
+        <p>${count} Active Weather Alert${count > 1 ? "s" : ""}</p>
       </div>
-      <div class="flex-1 overflow-y-auto px-5">${rows}</div>
-      <div class="flex shrink-0 items-center gap-2 border-t border-white/15 px-5 py-1.5 text-sm text-white/80">
+      <div class="alerts-body">${rows}</div>
+      <div class="alerts-note">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
         <span>Stay weather aware and have a plan.</span>
       </div>
@@ -330,19 +331,19 @@ const METRIC_ICONS = {
 function metricRow(icon, label, value) {
   if (value === null || value === undefined || value === "") return "";
   return `
-    <div class="flex items-center gap-3 border-t border-white/10 py-2 first:border-t-0">
-      <span class="text-sky-300">${icon}</span>
-      <span class="text-base text-sky-100/80">${esc(label)}</span>
-      <span class="ml-auto text-xl font-bold tabular text-white">${esc(value)}</span>
+    <div class="metric">
+      <span class="metric-icon">${icon}</span>
+      <span class="metric-label">${esc(label)}</span>
+      <span class="metric-value tabular">${esc(value)}</span>
     </div>`;
 }
 
 function renderCurrent(current) {
   if (!current) {
     return `
-      <section class="flex min-h-0 flex-[4] shrink-0 flex-col justify-center rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
-        <p class="text-sm font-bold uppercase tracking-widest text-sky-300/80">Current Weather</p>
-        <p class="mt-2 text-lg text-sky-200/70">Observation unavailable</p>
+      <section class="panel current grow-4">
+        <p class="panel-label">Current Weather</p>
+        <p class="current-desc">Observation unavailable</p>
       </section>`;
   }
 
@@ -363,15 +364,15 @@ function renderCurrent(current) {
   ].join("");
 
   return `
-    <section class="flex min-h-0 flex-[4] shrink-0 flex-col rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
-      <p class="text-sm font-bold uppercase tracking-widest text-sky-300/80">Current Weather</p>
-      <div class="mt-1 flex flex-1 items-stretch gap-5">
-        <div class="flex w-1/2 shrink-0 flex-col items-center justify-center gap-2">
+    <section class="panel current grow-4">
+      <p class="panel-label">Current Weather</p>
+      <div class="current-body">
+        <div class="current-main">
           ${weatherGlyph(current.textDescription, isDay, 110)}
-          <p class="text-7xl font-bold leading-none tabular">${current.temperature != null ? current.temperature : "--"}<span class="align-top text-3xl text-sky-300">°F</span></p>
-          <p class="text-xl text-sky-100/80">${esc(current.textDescription || "")}</p>
+          <p class="current-temp tabular">${current.temperature != null ? current.temperature : "--"}<span class="deg">°F</span></p>
+          <p class="current-desc">${esc(current.textDescription || "")}</p>
         </div>
-        <div class="flex flex-1 flex-col justify-evenly self-stretch border-l border-white/10 pl-5">
+        <div class="current-metrics">
           ${metrics}
         </div>
       </div>
@@ -380,17 +381,17 @@ function renderCurrent(current) {
 
 function renderIntervalRow(readings) {
   if (!readings || !readings.length) {
-    return `<p class="py-4 text-center text-sky-200/60">No hourly data</p>`;
+    return `<p class="no-data">No hourly data</p>`;
   }
   return readings
     .map((r) => {
       const hour = r.time.toLocaleTimeString(undefined, { hour: "numeric" });
       return `
-        <div class="flex flex-1 flex-col items-center justify-between rounded-xl bg-blue-900/50 py-3">
-          <span class="text-base font-semibold uppercase tracking-wide text-sky-200/80 tabular">${esc(hour)}</span>
+        <div class="interval">
+          <span class="interval-hour tabular">${esc(hour)}</span>
           ${weatherGlyph(r.short, r.isDay, 48)}
-          <span class="text-3xl font-bold leading-none tabular text-white">${r.temp != null ? r.temp + "°" : "--"}</span>
-          <span class="flex items-center gap-1 text-sm font-medium text-sky-300">
+          <span class="interval-temp tabular">${r.temp != null ? r.temp + "°" : "--"}</span>
+          <span class="interval-pop">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5S5 10 5 14.5a7 7 0 0 0 14 0C19 10 12 2.5 12 2.5Z"/></svg>
             ${r.pop != null ? r.pop + "%" : "0%"}
           </span>
@@ -402,39 +403,36 @@ function renderIntervalRow(readings) {
 function renderDots(count, idx) {
   if (count <= 1) return "";
   return Array.from({ length: count })
-    .map(
-      (_, i) =>
-        `<span class="size-2 rounded-full ${i === idx ? "bg-sky-300" : "bg-white/25"}"></span>`
-    )
+    .map((_, i) => `<span class="dot${i === idx ? " active" : ""}"></span>`)
     .join("");
 }
 
 function renderForecastCard(key, day) {
   if (!day) {
     return `
-      <div class="flex min-h-0 flex-[4] shrink-0 flex-col justify-center rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
-        <p class="text-sm font-bold uppercase tracking-widest text-sky-300/80">${esc(key)}</p>
-        <p class="mt-2 text-sky-200/70">Forecast unavailable</p>
+      <div class="panel forecast grow-4">
+        <p class="panel-label">${esc(key)}</p>
+        <p class="current-desc">Forecast unavailable</p>
       </div>`;
   }
   return `
-    <div class="flex min-h-0 flex-[4] shrink-0 flex-col rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
-      <div class="flex items-baseline justify-between gap-2">
-        <p class="text-sm font-bold uppercase tracking-widest text-sky-300/80">${esc(day.label)}</p>
-        <p class="text-sm text-sky-200/60">${esc(day.dateLabel)}</p>
+    <div class="panel forecast grow-4">
+      <div class="forecast-head">
+        <p class="panel-label">${esc(day.label)}</p>
+        <p class="forecast-date">${esc(day.dateLabel)}</p>
       </div>
-      <div class="mt-1 flex flex-1 items-center gap-5">
-        <div class="flex w-48 shrink-0 items-center gap-3">
+      <div class="forecast-body">
+        <div class="forecast-summary">
           ${weatherGlyph(day.condition, day.conditionIsDay, 56)}
-          <div class="flex flex-col justify-center">
-            <div class="flex items-baseline gap-2">
-              <span class="text-4xl font-bold tabular text-white">${day.high != null ? day.high + "°" : "--"}</span>
-              <span class="text-2xl font-semibold text-sky-300 tabular">${day.low != null ? day.low + "°" : "--"}</span>
+          <div class="forecast-summary-text">
+            <div class="forecast-temps">
+              <span class="hi tabular">${day.high != null ? day.high + "°" : "--"}</span>
+              <span class="lo tabular">${day.low != null ? day.low + "°" : "--"}</span>
             </div>
-            <p class="mt-0.5 text-sm leading-snug text-sky-100/80">${esc(day.condition || "")}</p>
+            <p class="forecast-cond">${esc(day.condition || "")}</p>
             ${
               day.pop != null
-                ? `<p class="mt-0.5 flex items-center gap-1 text-sm text-sky-300">
+                ? `<p class="forecast-pop">
                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5S5 10 5 14.5a7 7 0 0 0 14 0C19 10 12 2.5 12 2.5Z"/></svg>
                      ${day.pop}% Chance of Rain
                    </p>`
@@ -442,9 +440,9 @@ function renderForecastCard(key, day) {
             }
           </div>
         </div>
-        <div id="${key}-intervals" class="flex flex-1 items-stretch gap-2 self-stretch py-1"></div>
+        <div id="${key}-intervals" class="intervals"></div>
       </div>
-      <div id="${key}-dots" class="flex items-center justify-center gap-1.5"></div>
+      <div id="${key}-dots" class="dots"></div>
     </div>`;
 }
 
@@ -463,10 +461,10 @@ function updateIntervals() {
 
 function renderError(message) {
   return `
-    <div class="rounded-2xl border border-red-400/40 bg-red-900/60 px-6 py-5 text-white shadow-lg backdrop-blur">
-      <p class="text-xl font-semibold">Unable to load weather</p>
-      <p class="mt-1 text-lg text-red-100/90">${esc(message)}</p>
-      <button id="retry-btn" class="mt-3 rounded-lg border border-white/30 bg-white/10 px-4 py-2 font-medium text-white hover:bg-white/20">Retry</button>
+    <div class="panel error">
+      <p class="error-title">Unable to load weather</p>
+      <p class="error-msg">${esc(message)}</p>
+      <button id="retry-btn" class="btn">Retry</button>
     </div>`;
 }
 
