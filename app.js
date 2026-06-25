@@ -112,6 +112,7 @@ function buildForecastDays(hourlyPeriods) {
       temp: p.temperature,
       short: p.shortForecast,
       isDay: p.isDaytime,
+      pop: p.probabilityOfPrecipitation?.value ?? null,
     });
   }
 
@@ -120,6 +121,8 @@ function buildForecastDays(hourlyPeriods) {
     const temps = bucket.hours.map((h) => h.temp).filter((t) => t != null);
     const high = temps.length ? Math.max(...temps) : null;
     const low = temps.length ? Math.min(...temps) : null;
+    const pops = bucket.hours.map((h) => h.pop).filter((p) => p != null);
+    const pop = pops.length ? Math.max(...pops) : null;
     // Prefer a midday daytime reading for the headline condition.
     const midday =
       bucket.hours.find((h) => h.isDay && h.time.getHours() >= 12) ||
@@ -135,7 +138,9 @@ function buildForecastDays(hourlyPeriods) {
       }),
       high,
       low,
+      pop,
       condition: midday ? midday.short : null,
+      conditionIsDay: midday ? midday.isDay : true,
       windows: chunk(intervals, 4),
     };
   }
@@ -170,10 +175,14 @@ async function getWeather(zip) {
         `https://api.weather.gov/stations/${stationId}/observations/latest`
       );
       const o = obs.properties;
+      const temperature = cToF(o.temperature?.value);
+      const heatIndex = cToF(o.heatIndex?.value);
+      const windChill = cToF(o.windChill?.value);
       current = {
-        temperature: cToF(o.temperature?.value),
+        temperature,
         textDescription: o.textDescription ?? null,
-        heatIndex: cToF(o.heatIndex?.value),
+        heatIndex,
+        feelsLike: heatIndex ?? windChill ?? temperature,
         humidity:
           o.relativeHumidity?.value != null
             ? Math.round(o.relativeHumidity.value)
@@ -205,6 +214,45 @@ async function getWeather(zip) {
   };
 }
 
+/* ---------- weather glyphs ---------- */
+
+const ICON = {
+  sun: `<svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="5" fill="#fbbf24"/><g stroke="#fbbf24" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="3.5"/><line x1="12" y1="20.5" x2="12" y2="23"/><line x1="1" y1="12" x2="3.5" y2="12"/><line x1="20.5" y1="12" x2="23" y2="12"/><line x1="4" y1="4" x2="5.8" y2="5.8"/><line x1="18.2" y1="18.2" x2="20" y2="20"/><line x1="4" y1="20" x2="5.8" y2="18.2"/><line x1="18.2" y1="5.8" x2="20" y2="4"/></g></svg>`,
+  moon: `<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M12 3a6.5 6.5 0 0 0 9 9 9 9 0 1 1-9-9Z" fill="#e2e8f0"/></svg>`,
+  cloud: `<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" fill="#f1f5f9"/></svg>`,
+  rain: `<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M17.5 15H9a6 6 0 1 1 5.75-7.71h1.75a4.25 4.25 0 1 1 0 8.5Z" fill="#f1f5f9"/><g stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><line x1="8" y1="18" x2="7" y2="21"/><line x1="12" y1="18" x2="11" y2="21"/><line x1="16" y1="18" x2="15" y2="21"/></g></svg>`,
+  storm: `<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M17.5 14H9a6 6 0 1 1 5.75-7.71h1.75a4.25 4.25 0 1 1 0 8.5Z" fill="#f1f5f9"/><path d="M12 13l-3 5h2.4l-1 4 4-6h-2.6l1.2-3z" fill="#facc15"/></svg>`,
+  snow: `<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M17.5 14H9a6 6 0 1 1 5.75-7.71h1.75a4.25 4.25 0 1 1 0 8.5Z" fill="#f1f5f9"/><g fill="#bae6fd"><circle cx="8" cy="19" r="1.2"/><circle cx="12" cy="20.5" r="1.2"/><circle cx="16" cy="19" r="1.2"/></g></svg>`,
+  fog: `<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M17.5 12H9a6 6 0 1 1 5.75-7.71h1.75a4.25 4.25 0 1 1 0 8.5Z" fill="#f1f5f9"/><g stroke="#cbd5e1" stroke-width="2" stroke-linecap="round"><line x1="5" y1="16" x2="19" y2="16"/><line x1="7" y1="20" x2="17" y2="20"/></g></svg>`,
+};
+
+// Map an NWS condition string to a sized weather glyph (HTML).
+function weatherGlyph(text, isDay, size) {
+  const t = (text || "").toLowerCase();
+  const wrap = (inner) =>
+    `<span class="relative inline-flex shrink-0" style="width:${size}px;height:${size}px">${inner}</span>`;
+  const single = (svg) => wrap(`<span class="absolute inset-0">${svg}</span>`);
+  const composite = (bg) =>
+    wrap(
+      `<span class="absolute left-0 top-0" style="width:${Math.round(size * 0.6)}px;height:${Math.round(size * 0.6)}px">${bg}</span>` +
+        `<span class="absolute bottom-0 right-0" style="width:${Math.round(size * 0.78)}px;height:${Math.round(size * 0.78)}px">${ICON.cloud}</span>`
+    );
+
+  if (t.includes("thunder") || t.includes("tstorm")) return single(ICON.storm);
+  if (t.includes("snow") || t.includes("flurr") || t.includes("sleet") || t.includes("ice") || t.includes("wintry"))
+    return single(ICON.snow);
+  if (t.includes("rain") || t.includes("shower") || t.includes("drizzle"))
+    return single(ICON.rain);
+  if (t.includes("fog") || t.includes("haze") || t.includes("mist") || t.includes("smoke"))
+    return single(ICON.fog);
+
+  const partly = t.includes("partly") || t.includes("mostly sunny") || t.includes("mostly clear") || t.includes("few") || t.includes("scattered") || t.includes("intervals");
+  const cloudy = t.includes("cloud") || t.includes("overcast");
+  if (cloudy && !partly) return single(ICON.cloud);
+  if (cloudy || partly) return composite(isDay ? ICON.sun : ICON.moon);
+  return single(isDay ? ICON.sun : ICON.moon);
+}
+
 /* ---------- rendering ---------- */
 
 function severityBadge(severity) {
@@ -224,7 +272,7 @@ function severityBadge(severity) {
 function renderAlerts(alerts) {
   if (!alerts.length) {
     return `
-      <section class="flex h-[15vh] shrink-0 items-center gap-3 rounded-2xl border border-emerald-400/30 bg-emerald-900/40 px-6 text-emerald-100 shadow-lg backdrop-blur">
+      <section class="flex min-h-0 flex-[2] shrink-0 items-center gap-3 rounded-2xl border border-emerald-400/30 bg-emerald-900/40 px-6 text-emerald-100 shadow-lg backdrop-blur">
         <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
         </span>
@@ -258,12 +306,16 @@ function renderAlerts(alerts) {
 
   const count = alerts.length;
   return `
-    <section class="flex h-[15vh] shrink-0 flex-col overflow-hidden rounded-2xl border border-red-400/40 bg-gradient-to-b from-red-700/85 to-red-900/85 px-5 py-2 text-white shadow-lg backdrop-blur">
-      <div class="flex shrink-0 items-center gap-2 pb-1">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-        <p class="text-lg font-extrabold uppercase tracking-wide">${count} Active Weather Alert${count > 1 ? "s" : ""}</p>
+    <section class="flex min-h-0 flex-[3] shrink-0 flex-col overflow-hidden rounded-2xl border border-red-400/40 bg-gradient-to-b from-red-700/85 to-red-900/85 text-white shadow-lg backdrop-blur">
+      <div class="flex shrink-0 items-center gap-3 border-b border-white/15 px-5 py-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <p class="text-xl font-extrabold uppercase tracking-wide">${count} Active Weather Alert${count > 1 ? "s" : ""}</p>
       </div>
-      <div class="flex-1 overflow-y-auto">${rows}</div>
+      <div class="flex-1 overflow-y-auto px-5">${rows}</div>
+      <div class="flex shrink-0 items-center gap-2 border-t border-white/15 px-5 py-1.5 text-sm text-white/80">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>Stay weather aware and have a plan.</span>
+      </div>
     </section>`;
 }
 
@@ -278,17 +330,17 @@ const METRIC_ICONS = {
 function metricRow(icon, label, value) {
   if (value === null || value === undefined || value === "") return "";
   return `
-    <div class="flex items-center gap-2 border-t border-white/10 py-1.5 first:border-t-0">
+    <div class="flex items-center gap-3 border-t border-white/10 py-2 first:border-t-0">
       <span class="text-sky-300">${icon}</span>
-      <span class="text-sm text-sky-100/80">${esc(label)}</span>
-      <span class="ml-auto text-base font-bold tabular text-white">${esc(value)}</span>
+      <span class="text-base text-sky-100/80">${esc(label)}</span>
+      <span class="ml-auto text-xl font-bold tabular text-white">${esc(value)}</span>
     </div>`;
 }
 
 function renderCurrent(current) {
   if (!current) {
     return `
-      <section class="flex h-[20vh] shrink-0 flex-col justify-center rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
+      <section class="flex min-h-0 flex-[4] shrink-0 flex-col justify-center rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
         <p class="text-sm font-bold uppercase tracking-widest text-sky-300/80">Current Weather</p>
         <p class="mt-2 text-lg text-sky-200/70">Observation unavailable</p>
       </section>`;
@@ -299,8 +351,11 @@ function renderCurrent(current) {
       ? `${current.windDirection ? current.windDirection + " " : ""}${current.windSpeed} mph`
       : null;
 
+  const hour = new Date().getHours();
+  const isDay = hour >= 6 && hour < 19;
+
   const metrics = [
-    metricRow(METRIC_ICONS.heat, "Heat Index", current.heatIndex != null ? current.heatIndex + "°" : null),
+    metricRow(METRIC_ICONS.heat, "Feels Like", current.feelsLike != null ? current.feelsLike + "°" : null),
     metricRow(METRIC_ICONS.wind, "Wind", wind),
     metricRow(METRIC_ICONS.humidity, "Humidity", current.humidity != null ? current.humidity + "%" : null),
     metricRow(METRIC_ICONS.pressure, "Pressure", current.pressure != null ? current.pressure + " in" : null),
@@ -308,14 +363,15 @@ function renderCurrent(current) {
   ].join("");
 
   return `
-    <section class="flex h-[20vh] shrink-0 flex-col rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
+    <section class="flex min-h-0 flex-[4] shrink-0 flex-col rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
       <p class="text-sm font-bold uppercase tracking-widest text-sky-300/80">Current Weather</p>
-      <div class="mt-1 flex flex-1 items-center gap-6">
-        <div class="flex shrink-0 flex-col justify-center">
-          <p class="text-6xl font-bold leading-none tabular">${current.temperature != null ? current.temperature : "--"}<span class="align-top text-2xl text-sky-300">°F</span></p>
-          <p class="mt-1 text-lg text-sky-100/80">${esc(current.textDescription || "")}</p>
+      <div class="mt-1 flex flex-1 items-stretch gap-5">
+        <div class="flex w-1/2 shrink-0 flex-col items-center justify-center gap-2">
+          ${weatherGlyph(current.textDescription, isDay, 110)}
+          <p class="text-7xl font-bold leading-none tabular">${current.temperature != null ? current.temperature : "--"}<span class="align-top text-3xl text-sky-300">°F</span></p>
+          <p class="text-xl text-sky-100/80">${esc(current.textDescription || "")}</p>
         </div>
-        <div class="flex flex-1 flex-col justify-center self-stretch">
+        <div class="flex flex-1 flex-col justify-evenly self-stretch border-l border-white/10 pl-5">
           ${metrics}
         </div>
       </div>
@@ -330,9 +386,14 @@ function renderIntervalRow(readings) {
     .map((r) => {
       const hour = r.time.toLocaleTimeString(undefined, { hour: "numeric" });
       return `
-        <div class="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl bg-blue-900/50">
-          <span class="text-sm font-medium text-sky-200/70 tabular">${esc(hour)}</span>
-          <span class="text-2xl font-bold tabular text-white">${r.temp != null ? r.temp + "°" : "--"}</span>
+        <div class="flex flex-1 flex-col items-center justify-between rounded-xl bg-blue-900/50 py-3">
+          <span class="text-base font-semibold uppercase tracking-wide text-sky-200/80 tabular">${esc(hour)}</span>
+          ${weatherGlyph(r.short, r.isDay, 48)}
+          <span class="text-3xl font-bold leading-none tabular text-white">${r.temp != null ? r.temp + "°" : "--"}</span>
+          <span class="flex items-center gap-1 text-sm font-medium text-sky-300">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5S5 10 5 14.5a7 7 0 0 0 14 0C19 10 12 2.5 12 2.5Z"/></svg>
+            ${r.pop != null ? r.pop + "%" : "0%"}
+          </span>
         </div>`;
     })
     .join("");
@@ -351,24 +412,35 @@ function renderDots(count, idx) {
 function renderForecastCard(key, day) {
   if (!day) {
     return `
-      <div class="flex h-[20vh] shrink-0 flex-col justify-center rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
+      <div class="flex min-h-0 flex-[4] shrink-0 flex-col justify-center rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
         <p class="text-sm font-bold uppercase tracking-widest text-sky-300/80">${esc(key)}</p>
         <p class="mt-2 text-sky-200/70">Forecast unavailable</p>
       </div>`;
   }
   return `
-    <div class="flex h-[20vh] shrink-0 flex-col rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
+    <div class="flex min-h-0 flex-[4] shrink-0 flex-col rounded-2xl border border-sky-400/25 bg-blue-950/65 px-6 py-3 text-white shadow-lg backdrop-blur">
       <div class="flex items-baseline justify-between gap-2">
         <p class="text-sm font-bold uppercase tracking-widest text-sky-300/80">${esc(day.label)}</p>
         <p class="text-sm text-sky-200/60">${esc(day.dateLabel)}</p>
       </div>
-      <div class="mt-1 flex flex-1 items-center gap-6">
-        <div class="flex w-44 shrink-0 flex-col justify-center">
-          <div class="flex items-baseline gap-2">
-            <span class="text-4xl font-bold tabular text-white">${day.high != null ? day.high + "°" : "--"}</span>
-            <span class="text-2xl font-semibold text-sky-300 tabular">${day.low != null ? day.low + "°" : "--"}</span>
+      <div class="mt-1 flex flex-1 items-center gap-5">
+        <div class="flex w-48 shrink-0 items-center gap-3">
+          ${weatherGlyph(day.condition, day.conditionIsDay, 56)}
+          <div class="flex flex-col justify-center">
+            <div class="flex items-baseline gap-2">
+              <span class="text-4xl font-bold tabular text-white">${day.high != null ? day.high + "°" : "--"}</span>
+              <span class="text-2xl font-semibold text-sky-300 tabular">${day.low != null ? day.low + "°" : "--"}</span>
+            </div>
+            <p class="mt-0.5 text-sm leading-snug text-sky-100/80">${esc(day.condition || "")}</p>
+            ${
+              day.pop != null
+                ? `<p class="mt-0.5 flex items-center gap-1 text-sm text-sky-300">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5S5 10 5 14.5a7 7 0 0 0 14 0C19 10 12 2.5 12 2.5Z"/></svg>
+                     ${day.pop}% Chance of Rain
+                   </p>`
+                : ""
+            }
           </div>
-          <p class="mt-1 text-sm leading-snug text-sky-100/80">${esc(day.condition || "")}</p>
         </div>
         <div id="${key}-intervals" class="flex flex-1 items-stretch gap-2 self-stretch py-1"></div>
       </div>
@@ -444,9 +516,9 @@ function tickClock() {
     minute: "2-digit",
   });
   el.date.textContent = now.toLocaleDateString(undefined, {
-    weekday: "long",
     month: "long",
     day: "numeric",
+    year: "numeric",
   });
 }
 
